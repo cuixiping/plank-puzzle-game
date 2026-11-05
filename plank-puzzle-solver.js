@@ -3,6 +3,7 @@
 // rollup plank-puzzle-solver.js --format es | terser --output plank-puzzle-solver.min.js --module --ecma 2017 --format ascii_only --toplevel --compress drop_console=true --mangle --mangle-props keep_quoted,reserved=[_foo,bar_] --enclose document,Array,Math:document,Array,Math
 
 import { plank_puzzle_levels_6x6 } from "./plank-puzzle-levels.js";
+import { plank_puzzle_levels_6x6_addelete } from "./plank-puzzle-levels-addelete.js";
 
 class Point {
 	/**
@@ -564,6 +565,12 @@ let $1 = (s, c) => (c||document).querySelector(s);
 let strPositions = "8600720030121363653454";
 let strNodes = "3036324541257314632353256";
 let currLevelIndex = 18;
+let usp = new URLSearchParams(location.search);
+if (usp.has('p') && usp.has('n')) {
+	strPositions = usp.get('p');
+	strNodes = usp.get('n');
+	$1('#level-number').textContent = usp.get('t') || '自定义';
+}
 
 let timer = 0;
 let canvas = $1('canvas#plank-canvas');
@@ -594,7 +601,7 @@ let goLevel = (offset) => {
 	currLevelIndex = (currLevelIndex + offset) % plank_puzzle_levels_6x6.length;
 	let level = plank_puzzle_levels_6x6[currLevelIndex];
 	initBoard(level.positions, level.nodes);
-	$1('#level-number').textContent = (currLevelIndex + 1) + '/' + plank_puzzle_levels_6x6.length;
+	$1('#level-number').textContent = (currLevelIndex + 1) + '/' + plank_puzzle_levels_6x6.length + ' ' + (level['name']||'');
 };
 let prevLevel = () => goLevel(-1);
 let nextLevel = () => goLevel(+1);
@@ -647,6 +654,8 @@ $1('#btn-solve').addEventListener('click', e => {
 			board.setStateString(stateString);
 			board.render();
 		}, 1000);
+	} else {
+		alert('solve failed');
 	}
 });
 
@@ -658,5 +667,13 @@ $1('#btn-reset').addEventListener('click', e => {
 
 $1('#btn-prev-level').addEventListener('click', prevLevel);
 $1('#btn-next-level').addEventListener('click', nextLevel);
+
+plank_puzzle_levels_6x6.push(...plank_puzzle_levels_6x6_addelete);
+
+if (usp.has('p') && usp.has('n')) {
+	$1('#level-number').textContent = usp.get('t') || 'Customized';
+} else {
+	$1('#level-number').textContent = (currLevelIndex + 1) + '/' + plank_puzzle_levels_6x6.length + ' ' + (plank_puzzle_levels_6x6[currLevelIndex]['name']||'');
+}
 
 initBoard(strPositions, strNodes);
