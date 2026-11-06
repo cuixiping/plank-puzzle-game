@@ -631,6 +631,18 @@ let toggleUIState = (state) => {
 	}
 	uiState = state;
 };
+let doResize = () => {
+	let bW = document.body.offsetWidth - 20;
+	let w0 = 600, h0 = 450;
+	let cw = canvas.offsetWidth, ch;
+	let w = bW >= w0 ? w0 : bW;
+	if (w != cw) {
+		cw = w;
+		ch = Math.round(h0 * w / w0);
+		board.initRenderConfig(ctx, 0, 0, canvas.width = cw, canvas.height = ch);
+		board.render();
+	}
+};
 
 let initBoard = (positions, nodes) => {
 	clearTimer();
@@ -734,6 +746,7 @@ document.addEventListener('keyup', e => {
 		}
 	}
 });
+window.addEventListener('resize', doResize);
 
 $1('#btn-prev-level').addEventListener('click', prevLevel);
 $1('#btn-next-level').addEventListener('click', nextLevel);
@@ -747,3 +760,4 @@ if (usp.has('p') && usp.has('n')) {
 }
 
 initBoard(strPositions, strNodes);
+doResize();

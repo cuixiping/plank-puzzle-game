@@ -1,0 +1,11 @@
+{
+    "name": "plank-puzzle-solver",
+    "version": "2.0",
+    "description": "plank-puzzle game and solver",
+    "author": "cuixiping",
+    "license": "MIT",
+    "homepage": "https://github.com/cuixiping/plank-puzzle-game",
+    "scripts": {
+        "build": "rollup plank-puzzle-solver.js --format es | terser --output plank-puzzle-solver.min.js --module --ecma 2017 --format ascii_only --toplevel --compress drop_console=true --mangle --mangle-props keep_quoted,reserved=[_foo,bar_] --enclose document,Array,Math:document,Array,Math"
+    }
+}
