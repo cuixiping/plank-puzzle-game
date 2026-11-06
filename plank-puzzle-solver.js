@@ -261,7 +261,7 @@ class Board {
 			});
 			edges = edges.filter(e => {
 				for (const stick2 of this.sticks) {
-					if (this.isEdgeCross(e, stick2)) {
+					if (stick2 != stick && this.isEdgeCross(e, stick2)) {
 						return false;
 					}
 				}
@@ -500,8 +500,8 @@ class Board {
 }
 
 /** @param {Board} board */
-function solveBFS(board, initState) {
-	initState = initState || board.getStateString();
+function solveBFS(board) {
+	let initState = board.getStateString();
 	if (board.isTargetOK()) {
 		return {solved: true, stateCount: 1, solution: [initState], steps: 0};
 	}
@@ -641,7 +641,7 @@ canvas.addEventListener('click', e => {
 
 $1('#btn-solve').addEventListener('click', e => {
 	clearTimer();
-	let re = solveBFS(board, initState);
+	let re = solveBFS(board);
 	console.log(re);
 	if (re.solved) {
 		let i = 0;
