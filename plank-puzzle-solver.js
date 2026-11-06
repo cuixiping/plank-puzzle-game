@@ -173,6 +173,31 @@ class Board {
 		this.edgeFillState = {};
 		this.sticks = sticks;
 		this.setActiveStick(start);
+		this.historyStates = [this.getStateString()];
+		this.historyIndex = 0;
+	}
+	pushHistoryState(state = null) {
+		state = state || this.getStateString();
+		if (state == this.historyStates[this.historyIndex]) {
+			return false;
+		}
+		this.historyStates.length = ++this.historyIndex;
+		this.historyStates.push(state);
+	}
+	goHistory(offset = -1) {
+		return this.gotoHistory(this.historyIndex + offset);
+	}
+	canGoHistory(offset = -1) {
+		let index = this.historyIndex + offset;
+		return !!this.historyStates[index];
+	}
+	gotoHistory(index = 0) {
+		if (index < 0 || index >= this.historyStates.length || !this.historyStates[index]) {
+			return null;
+		}
+		let stateString = this.historyStates[this.historyIndex = index];
+		this.setStateString(stateString);
+		return stateString;
 	}
 	/** @param {Point} p */
 	setActiveStick(p) {
@@ -575,10 +600,12 @@ if (usp.has('p') && usp.has('n')) {
 let timer = 0;
 let canvas = $1('canvas#plank-canvas');
 let ctx = canvas.getContext('2d');
+const UI_STATE_ANIMATE = 'animate';
+const UI_STATE_IDLE = 'idle';
+let uiState = UI_STATE_IDLE;
 
 /** @type {Board} */
 let board;
-let initState;
 
 let clearTimer = () => {
 	if (timer) {
@@ -586,15 +613,33 @@ let clearTimer = () => {
 		timer = 0;
 	}
 };
+let updateUndoRedoButton = () => {
+	$1('#btn-undo').disabled = !board.canGoHistory(-1);
+	$1('#btn-redo').disabled = !board.canGoHistory(1);
+	$1('#btn-reset').disabled = !board.canGoHistory(-1);
+};
+let toggleUIState = (state) => {
+	if (state == uiState) {
+		return;
+	}
+	let buttons = document.querySelectorAll('button');
+	if (state == UI_STATE_ANIMATE) {
+		buttons.forEach(b => b.disabled = true);
+	} else {
+		buttons.forEach(b => b.disabled = false);
+		updateUndoRedoButton();
+	}
+	uiState = state;
+};
 
 let initBoard = (positions, nodes) => {
 	clearTimer();
 	strPositions = positions;
 	strNodes = nodes;
 	board = Board.parseText2(strPositions, strNodes);
-	initState = board.getStateString();
 	board.initRenderConfig(ctx, 0, 0, canvas.width, canvas.height);
 	board.render();
+	updateUndoRedoButton();
 };
 
 let goLevel = (offset) => {
@@ -610,6 +655,10 @@ let showSuccess = () => setTimeout(()=>alert('You win!'),1);
 
 canvas.addEventListener('click', e => {
 	clearTimer();
+	if (uiState == UI_STATE_ANIMATE) {
+		toggleUIState(UI_STATE_IDLE);
+		return;
+	}
 	let ex = e.offsetX, ey = e.offsetY;
 	let target = board.getTarget(ex, ey);
 	console.log(target);
@@ -628,6 +677,7 @@ canvas.addEventListener('click', e => {
 		case Board.targetType.Edge: {
 			if (board.tryMoveSelectedStickTo(target.edges)) {
 				board.render();
+				board.pushHistoryState();
 				if (board.isTargetOK()) {
 					showSuccess();
 				}
@@ -645,13 +695,19 @@ $1('#btn-solve').addEventListener('click', e => {
 	console.log(re);
 	if (re.solved) {
 		let i = 0;
+		let historyIndexOld = board.historyIndex;
+		for (const stateString of re.solution) {
+			board.pushHistoryState(stateString);
+		}
+		// 禁用其它按钮
+		toggleUIState(UI_STATE_ANIMATE);
 		timer = setInterval(() => {
 			if (i >= re.solution.length) {
 				clearTimer();
+				toggleUIState(UI_STATE_IDLE);
 				return;
 			}
-			let stateString = re.solution[i++];
-			board.setStateString(stateString);
+			board.gotoHistory(historyIndexOld + ++i);
 			board.render();
 		}, 1000);
 	} else {
@@ -661,8 +717,22 @@ $1('#btn-solve').addEventListener('click', e => {
 
 $1('#btn-reset').addEventListener('click', e => {
 	clearTimer();
-	board.setStateString(initState);
-	board.render();
+	board.gotoHistory(0) && board.render();
+});
+$1('#btn-undo').addEventListener('click', e => {
+	board.goHistory(-1) && board.render();
+});
+$1('#btn-redo').addEventListener('click', e => {
+	board.goHistory(1) && board.render();
+});
+document.addEventListener('keyup', e => {
+	if (uiState == UI_STATE_IDLE && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+		if (e.key == 'ArrowLeft') {
+			$1('#btn-undo').click();
+		} else if (e.key == 'ArrowRight') {
+			$1('#btn-redo').click();
+		}
+	}
 });
 
 $1('#btn-prev-level').addEventListener('click', prevLevel);
