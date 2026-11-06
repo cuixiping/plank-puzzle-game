@@ -614,9 +614,10 @@ let clearTimer = () => {
 	}
 };
 let updateUndoRedoButton = () => {
-	$1('#btn-undo').disabled = !board.canGoHistory(-1);
-	$1('#btn-redo').disabled = !board.canGoHistory(1);
-	$1('#btn-reset').disabled = !board.canGoHistory(-1);
+	let anim = uiState == UI_STATE_ANIMATE;
+	$1('#btn-undo').disabled = anim || !board.canGoHistory(-1);
+	$1('#btn-redo').disabled = anim || !board.canGoHistory(1);
+	$1('#btn-reset').disabled = anim || !board.canGoHistory(-1);
 };
 let toggleUIState = (state) => {
 	if (state == uiState) {
@@ -690,6 +691,7 @@ canvas.addEventListener('click', e => {
 			if (board.tryMoveSelectedStickTo(target.edges)) {
 				board.render();
 				board.pushHistoryState();
+				updateUndoRedoButton();
 				if (board.isTargetOK()) {
 					showSuccess();
 				}
@@ -717,6 +719,7 @@ $1('#btn-solve').addEventListener('click', e => {
 			if (i >= re.solution.length) {
 				clearTimer();
 				toggleUIState(UI_STATE_IDLE);
+				updateUndoRedoButton();
 				return;
 			}
 			board.gotoHistory(historyIndexOld + ++i);
@@ -730,12 +733,15 @@ $1('#btn-solve').addEventListener('click', e => {
 $1('#btn-reset').addEventListener('click', e => {
 	clearTimer();
 	board.gotoHistory(0) && board.render();
+	updateUndoRedoButton();
 });
 $1('#btn-undo').addEventListener('click', e => {
 	board.goHistory(-1) && board.render();
+	updateUndoRedoButton();
 });
 $1('#btn-redo').addEventListener('click', e => {
 	board.goHistory(1) && board.render();
+	updateUndoRedoButton();
 });
 document.addEventListener('keyup', e => {
 	if (uiState == UI_STATE_IDLE && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
